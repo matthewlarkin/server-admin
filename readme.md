@@ -1,10 +1,7 @@
 # Server Admin
-A simple collection of code snippets, mostly bash scripts, for basic server administration from shared Namecheap hosting to Digital Ocean Virtual Private Servers.
+A simple collection of bash scripts, for basic server setup and hardening shared Namecheap hosting to Digital Ocean Virtual Private Servers.
 
-- [Free Let's Encrypt SSL for Namecheap Shared Hosting](https://github.com/matthewlarkin/server-admin/blob/main/namecheap-letsencrypt.md)
-- [VPS Hardening & Basic Security](https://github.com/matthewlarkin/server-admin/blob/main/vps-hardening.md)
-- [NGINX Reverse Proxy for Multiple Sites](https://github.com/matthewlarkin/server-admin/blob/main/nginx-reverse-proxy.md)
-- [Systemd Service Setup](https://github.com/matthewlarkin/server-admin/blob/main/systemd-services.md)
+This is intended to be downloaded and run on a fresh server.
 
 ⚠️ - - - ⚠️ - - - ⚠️
 
