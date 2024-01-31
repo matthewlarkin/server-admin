@@ -9,14 +9,14 @@ Ensuring the security of your Virtual Private Server (VPS) is crucial. This guid
 ### SSH into Server
 First, access your server using SSH.
 
-```sh
+```bash
 ssh root@{{my_new_ip_address}}
 ```
 
 ### Create a Non-Root User
 It's safer to operate as a non-root user.
 
-```sh
+```bash
 adduser {{my_new_user}}
 usermod -aG sudo {{my_new_user}}
 ```
