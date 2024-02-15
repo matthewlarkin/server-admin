@@ -12,7 +12,7 @@ printf "\n- - - - - - - - - - - - - - -\n"
 
 # run the nginx script (to make sure nginx is installed and running)
 printf "\n🚜 ${BLUE}Setting up SQLPage...${RESET}\n"
-$(bash server-admin/site-setup/nginx.sh)
+bash server-admin/site-setup/nginx.sh
 
 
 # if /usr/bin/sqlpage does not exist yet
