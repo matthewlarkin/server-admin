@@ -98,6 +98,10 @@ printf "\n✅ ${GREEN}Repo cloned into /var/www/!${RESET}\n"
 
 printf "\n- - - - - - - - - - - - - - -\n"
 
+printf "\n🚜 Setting up the SQLPage configuration file\n"
+# use jq to edit the existing sqlpage.json file. We need to make the property "port" equal to the port we want to run the service on
+sudo jq '.port = '$port'' /var/www/$repo_name/sqlpage/sqlpage.json > /var/www/$repo_name/sqlpage/sqlpage.json.tmp && sudo mv /var/www/$repo_name/sqlpage/sqlpage.json.tmp /var/www/$repo_name/sqlpage/sqlpage.json
+
 # setup the sqlpage service for this repo
 printf "\n🚜 Setting up SQLPage service (for autostart on server boot)... 🚜\n"
 
@@ -153,23 +157,6 @@ server {
         proxy_cache_bypass \$http_upgrade;
     }
 }
-
-server {
-    listen 443 ssl http2;
-    server_name $domain;
-
-    ssl_certificate /etc/letsencrypt/live/$domain/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;
-
-    location / {
-        proxy_pass http://localhost:$port;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_cache_bypass \$http_upgrade;
-    }
-}
 EOT
 
 # create a symbolic link to the sites-enabled directory
@@ -189,4 +176,8 @@ printf "\n🚜 Restarting nginx...\n"
 sudo systemctl restart nginx
 
 printf "\n\n🚀 ${GREEN}SQLPage is now running at https://$domain!${RESET}\n\n"
-printf "\n\nIf everything went well, we should be able to visit https://$domain and see the SQLPage website!\n\nYou may want to check the status of the SQLPage service by running 'sudo systemctl status sqlpage-$repo_name' and the nginx service by running 'sudo systemctl status nginx'.\n\nAnd make sure you've set up the SQLPage configuration file at /var/www/$repo_name/sqlpage/sqlpage.json.\n\n"
+printf "\n\nIf everything went well, we should be able to visit https://$domain\n
+and see the SQLPage website!\n\nYou may want to check the status of the SQLPage\n
+service by running 'sudo systemctl status sqlpage-$repo_name' and the nginx service\n
+by running 'sudo systemctl status nginx'.\n\nAnd make sure you've set up the SQLPage\n
+configuration file at /var/www/$repo_name/sqlpage/sqlpage.json.\n\n"
