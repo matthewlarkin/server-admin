@@ -27,25 +27,4 @@ sudo ufw status
 sudo apt install unattended-upgrades -y
 sudo dpkg-reconfigure --priority=low unattended-upgrades
 
-# Log Monitoring with Logwatch
-sudo apt install logwatch -y
-sudo cp /usr/share/logwatch/default.conf/logwatch.conf /etc/logwatch/conf/logwatch.conf
-
-# Rootkit Scanners
-sudo apt install rkhunter chkrootkit lynis -y
-sudo sed -i 's/CRON_DAILY_RUN="false"/CRON_DAILY_RUN="true"/g' /etc/default/rkhunter
-sudo rkhunter --check
-sudo rkhunter --update
-sudo mkdir -p /var/log/rkhunter
-sudo chmod 700 /var/log/rkhunter
-sudo mkdir -p /var/log/lynis
-sudo chmod 700 /var/log/lynis
-
-# We'll get an error with WEB_CMD if we don't set it to null,
-# but since we're doing unattended updates, we shouldn't need it
-
-# Adding crontab entries
-(crontab -l 2>/dev/null; echo "0 0 * * * sudo rkhunter --update && sudo rkhunter --cronjob --report-warnings-only > /var/log/rkhunter/rkhunter_$(date +\\%Y-\\%m-\\%d).log") | crontab -
-(crontab -l 2>/dev/null; echo "0 3 * * 0 sudo lynis audit system > /var/log/lynis/lynis_weekly_audit_$(date +\\%Y-\\%m-\\%d).log") | crontab -
-
-echo "Security tools installed and configured. Remember to manually set up crontab for regular RKHunter and Lynis scans."
+curl -sO https://packages.wazuh.com/4.7/wazuh-install.sh && sudo bash ./wazuh-install.sh -a
