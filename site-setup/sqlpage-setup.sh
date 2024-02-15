@@ -1,5 +1,5 @@
 # run the nginx script (to make sure nginx is installed and running)
-$(../site-setup/nginx.sh)
+$(bash server-admin/site-setup/nginx.sh)
 
 # install sqlpage if not already installed
 # check if sqlpage is installed
