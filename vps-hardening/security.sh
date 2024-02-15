@@ -32,3 +32,6 @@ read -p "Install Wazuh? (y/n) " -n 1 -r
 if [ $REPLY = "y" ]; then
     curl -sO https://packages.wazuh.com/4.7/wazuh-install.sh && sudo bash ./wazuh-install.sh -a
 fi
+
+# Reboot the system
+sudo reboot
