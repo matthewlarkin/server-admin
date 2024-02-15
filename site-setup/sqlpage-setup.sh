@@ -51,7 +51,6 @@ while [ -n "$(sudo lsof -i :$port)" ]; do
 done
 printf "\n✅ ${GREEN}Port ${port} is available!\n${RESET}"
 
-
 printf "\n- - - - - - - - - - - - - - -\n"
 
 public_ip=$(curl -s ifconfig.me)
@@ -91,8 +90,13 @@ printf "\n👏 ${GREEN}Awesome!${RESET}\n"
 printf "\n🚜 Cloning the repo into /var/www/...\n"
 
 # clone the repo into /var/www/
-sudo git clone git@github.com:$repo.git
+git clone git@github.com:$repo.git
 sudo mv $repo_name /var/www/
+
+# check that the repo was cloned to the correct location
+if [ ! -d "/var/www/$repo_name" ]; then
+    printf "\n⚠️ ${RED}Something went wrong. The repo was not cloned into /var/www/.\n${RESET}" && exit 1
+fi
 
 printf "\n✅ ${GREEN}Repo cloned into /var/www/!${RESET}\n"
 
@@ -100,7 +104,30 @@ printf "\n- - - - - - - - - - - - - - -\n"
 
 printf "\n🚜 Setting up the SQLPage configuration file\n"
 # use jq to edit the existing sqlpage.json file. We need to make the property "port" equal to the port we want to run the service on
-sudo jq '.port = '$port'' /var/www/$repo_name/sqlpage/sqlpage.json > /var/www/$repo_name/sqlpage/sqlpage.json.tmp && sudo mv /var/www/$repo_name/sqlpage/sqlpage.json.tmp /var/www/$repo_name/sqlpage/sqlpage.json
+# check if jq is installed
+if ! [ -x "$(command -v jq)" ]; then
+    printf "\n⚠️ ${RED}jq is not installed.${RESET}\n"
+    printf "\n🚜 Installing jq...\n"
+    sudo apt install -y jq
+fi
+
+sqlpage_config_dir="/var/www/$repo_name/sqlpage"
+sqlpage_config_file="$sqlpage_config_dir/sqlpage.json"
+
+# Create the directory if it does not exist
+sudo mkdir -p "$sqlpage_config_dir"
+
+# Check if the file exists and contains valid JSON
+if sudo test -s "$sqlpage_config_file" && sudo jq empty "$sqlpage_config_file" >/dev/null 2>&1; then
+    # File exists and contains valid JSON, modify it
+    temp_file=$(mktemp)
+    sudo jq ".port = \"$port\" | .environment = \"production\"" "$sqlpage_config_file" > "$temp_file" && sudo mv "$temp_file" "$sqlpage_config_file"
+else
+    # File does not exist or does not contain valid JSON, create it
+    echo "{\"port\": \"$port\", \"environment\": \"production\"}" | sudo tee "$sqlpage_config_file" > /dev/null
+fi
+
+sudo chown www-data:www-data /var/www/$repo_name/sqlpage/sqlpage.json
 
 # setup the sqlpage service for this repo
 printf "\n🚜 Setting up SQLPage service (for autostart on server boot)... 🚜\n"
@@ -174,6 +201,10 @@ sudo certbot --nginx -d $domain
 # restart nginx
 printf "\n🚜 Restarting nginx...\n"
 sudo systemctl restart nginx
+
+# restart the sqlpage service for good measure
+printf "\n🚜 Restarting the SQLPage service...\n"
+sudo systemctl restart sqlpage-$repo_name
 
 printf "\n\n🚀 ${GREEN}SQLPage is now running at https://$domain!${RESET}\n\n"
 printf "\n\nIf everything went well, we should be able to visit https://$domain\n
