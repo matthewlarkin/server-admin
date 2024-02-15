@@ -56,7 +56,7 @@ After=network.target
 
 [Service]
 Type=simple
-User=$USER
+User=www-data
 WorkingDirectory=/var/www/$repo_name
 ExecStart=/usr/bin/sqlpage
 Restart=on-failure
@@ -64,6 +64,9 @@ Restart=on-failure
 [Install]
 WantedBy=multi-user.target
 EOT
+
+# reload the systemd daemon
+sudo systemctl daemon-reload
 
 # start the sqlpage service
 sudo systemctl start sqlpage-$repo_name
