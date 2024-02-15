@@ -27,4 +27,8 @@ sudo ufw status
 sudo apt install unattended-upgrades -y
 sudo dpkg-reconfigure --priority=low unattended-upgrades
 
-curl -sO https://packages.wazuh.com/4.7/wazuh-install.sh && sudo bash ./wazuh-install.sh -a
+read -p "Install Wazuh? (y/n) " -n 1 -r
+
+if [ $REPLY = "y" ]; then
+    curl -sO https://packages.wazuh.com/4.7/wazuh-install.sh && sudo bash ./wazuh-install.sh -a
+fi

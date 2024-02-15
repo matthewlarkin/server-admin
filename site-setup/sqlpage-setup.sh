@@ -9,6 +9,7 @@ if ! [ -x "$(command -v sqlpage)" ]; then
     sudo tar -xzf sqlpage-linux.tgz && sudo rm sqlpage-linux.tgz
     sudo mv sqlpage.bin /usr/bin/sqlpage
     sudo chmod 750 /usr/bin/sqlpage
+    sudo chown www-data:www-data /usr/bin/sqlpage
 fi
 
 # install the sqlpage website in the home directory
@@ -28,7 +29,8 @@ else
 fi
 
 # clone the repo into /var/www/
-sudo git clone git@github.com:$repo.git /var/www/$repo_name
+git clone git@github.com:$repo.git
+sudo mv $repo_name /var/www/
 
 # cd into the repo
 cd /var/www/$repo_name
