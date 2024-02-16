@@ -2,68 +2,113 @@
 
 source colors.sh
 
-printf "\n - - - - - - - - - - - - - - - - - - -\n"
-printf "\n- - - - - 🌳 SQLPage Setup 🌳 - - - - -\n"
-printf "\n - - - - - - - - - - - - - - - - - - -\n"
+printf "\n\n- - - - - - - - - - - - - - - - - - -\n"
+printf "\n- - 🌳 SQLPage Deploy 🌳 - - - - - - -\n"
+printf "\n- - - - - - - - - - - - - - - - - - -\n\n"
 
+# Installs NGINX and SQLPage
 bash web/nginx/install.sh
 bash web/sqlpage/install.sh
 
-# install the sqlpage website in the home directory
+# Collect details about the project from the user
 printf "\n- - - 🌿 Project Details 🌿 - - -\n"
 printf "GitHub repo <user/repo>: " && read repo
 printf "Domain name: " && read domain
 printf "Include www (y/n): " && read www_included
 printf "SQLPage port: " && read port
 
-# check if something is currently running on the port
+# Validates the given port
 while [ -n "$(sudo lsof -i :$port)" ]; do
-    printf "${yellow}Port ${port} is already in use!${RESET}"
+    printf "${yellow}Port ${port} is already in use!${reset} Please choose another port..."
     printf "SQLPage port: " && read port
 done
 
-printf "\n- - - - - - - - - - - - - - -\n"
+# Setup repo_name
+repo_name=$(echo $repo | cut -d'/' -f2)
 
-bash web/verify-domain.sh "$domain"
-bash web/var-www.sh
+# Check if the domain is pointing to the
+# server's IP address and sets up /var/www/
+bash web/dns-check.sh "$domain"
+bash web/www.sh
+
+
+
+
+
+# - - - - - - - - - - - - - - -
+# - - SSH Key Management - - - -
+# - - - - - - - - - - - - - - -
 
 # list available SSH keys
-printf "\n🔑 ${YELLOW}Available SSH keys:${RESET}\n"
-ls -al ~/.ssh
-printf "\nDo you have an SSH key setup for this server and GitHub? (y/n) "
+printf "\n- - - 🌿 SSH Keys 🌿 - - -\n"
+available_ssh_keys=$(bash security/ssh.sh -l)
 
-[[ $REPLY == [yY] ]] && printf "\n🔑 ${GREEN}Great!${RESET}\n" || bash setup-ssh-key.sh
-
-printf "\n👏 ${GREEN}Awesome!${RESET}\n"
-
-printf "\n🚜 Cloning the repo into /var/www/...\n"
-
-# clone the repo into /var/www/
-git clone git@github.com:$repo.git
-sudo mv $repo_name /var/www/
-
-# check that the repo was cloned to the correct location
-if [ ! -d "/var/www/$repo_name" ]; then
-    printf "\n⚠️ ${RED}Something went wrong. The repo was not cloned into /var/www/.\n${RESET}" && exit 1
+# if there are no SSH keys, create a new one
+if [ -z "$available_ssh_keys" ]; then
+    printf "\n⚠️ ${red}No SSH keys found.${reset}\n"
+    printf "\n🚜 Creating a new SSH key...\n"
+    bash security/ssh.sh -n
+    printf "\n✅ ${green}SSH key created!${reset}\n"
+else
+    printf "\n🚜 Use an existing SSH key? (y/n): " && read use_existing_ssh_key
+    if [ "$use_existing_ssh_key" = "n" ]; then
+        printf "\n🚜 Creating a new SSH key...\n"
+        bash security/ssh.sh -n
+        printf "\n✅ ${green}SSH key created!${reset}\n"
+    else
+        # allow user to choose an existing SSH key
+        printf "\nAvailable SSH keys:\n"
+        echo "$available_ssh_keys"
+        printf "\nSSH key to use: " && read ssh_key
+    fi
 fi
 
-printf "\n✅ ${GREEN}Repo cloned into /var/www/!${RESET}\n"
+# Verify that the chosen SSH key exists
+while [ ! -f ~/.ssh/$ssh_key ]; do
+    printf "\n⚠️ ${red}SSH key not found.${reset}\n"
+    printf "\nAvailable SSH keys:\n"
+    echo "$available_ssh_keys"
+    printf "\nSSH key to use: " && read ssh_key
+done
 
-printf "\n- - - - - - - - - - - - - - -\n"
+# Check that user has set up SSH key on GitHub
+printf "\n- - - 🌿 GitHub SSH Key 🌿 - - -\n"
+printf "\nHave you set up the SSH key on GitHub? (y/n): " && read ssh_key_setup
+
+while [ "$ssh_key_setup" != "y" ]; do
+    printf "\n⚠️ ${red}Please set up the SSH key on GitHub.${reset} Then, press 'y' to continue: " && read ssh_key_setup
+done
+
+
+
+
+
+# - - - - - - - - - - - - - - -
+# - - Project Deployment - - - -
+# - - - - - - - - - - - - - - -
+
+# Clone the repo into /var/www/
+git clone "git@github.com:$repo.git" && sudo mv $repo_name /var/www/
+
+
+# - - - - - - -
+# - - SQLPage config
+# - - - - - - -
 
 printf "\n🚜 Setting up the SQLPage configuration file\n"
-# use jq to edit the existing sqlpage.json file. We need to make the property "port" equal to the port we want to run the service on
+
+# Use jq to edit the existing sqlpage.json file. We
+# need to make the property "port" equal to the
+# port we want to run the service on
 # check if jq is installed
 if ! [ -x "$(command -v jq)" ]; then
-    printf "\n⚠️ ${RED}jq is not installed.${RESET}\n"
+    printf "\n⚠️ ${yellow}jq is not installed.${reset}\n"
     printf "\n🚜 Installing jq...\n"
     sudo apt install -y jq
 fi
 
 sqlpage_config_dir="/var/www/$repo_name/sqlpage"
 sqlpage_config_file="$sqlpage_config_dir/sqlpage.json"
-
-# Create the directory if it does not exist
 sudo mkdir -p "$sqlpage_config_dir"
 
 # Check if the file exists and contains valid JSON
@@ -76,15 +121,13 @@ else
     echo "{\"port\": \"$port\", \"environment\": \"production\"}" | sudo tee "$sqlpage_config_file" > /dev/null
 fi
 
+# Important: the sqlpage.json file must be owned by www-data
+# so that the SQLPage service can read it and set environment variables
 sudo chown www-data:www-data /var/www/$repo_name/sqlpage/sqlpage.json
 
 # setup the sqlpage service for this repo
 printf "\n🚜 Setting up SQLPage service (for autostart on server boot)... 🚜\n"
-
-# create the sqlpage.service file
 sudo touch /etc/systemd/system/sqlpage-$repo_name.service
-
-# write the sqlpage.service file
 sudo tee /etc/systemd/system/sqlpage-$repo_name.service > /dev/null <<EOT
 [Unit]
 Description=SQLPage Service for $domain
@@ -101,19 +144,13 @@ Restart=on-failure
 WantedBy=multi-user.target
 EOT
 
-# reload the systemd daemon
-printf "\n🚜 Reloading the systemd daemon...\n"
+# Start the SQLPage service and enable it to start on server boot
+printf "\n🚜 Setting up systemd for SQLPage...\n"
 sudo systemctl daemon-reload
-
-# start the sqlpage service
-printf "\n🚜 Starting the SQLPage service...\n"
 sudo systemctl start sqlpage-$repo_name
-
-# enable the sqlpage service
-printf "\n🚜 Enabling the SQLPage service...\n"
 sudo systemctl enable sqlpage-$repo_name
 
-# create the nginx config file
+# Create the nginx config file
 printf "\n🚜 Creating the nginx config file...\n"
 sudo touch /etc/nginx/sites-available/$repo_name
 
@@ -125,7 +162,7 @@ server {
     server_name $domain;
 
     location / {
-        proxy_pass http://localhost:$port;
+        proxy_pass http://127.0.0.1:$port;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -134,30 +171,37 @@ server {
     }
 }
 EOT
-
-# create a symbolic link to the sites-enabled directory
-printf "\n🚜 Creating a symbolic link to the sites-enabled directory...\n"
 sudo ln -s /etc/nginx/sites-available/$repo_name /etc/nginx/sites-enabled/$repo_name
 
+
+# - - - - - - -
+# - - SSL Cert Setup
+# - - - - - - -
+
 # setup certbot for the domain
+printf "\n🚜 Setting up Certbot for SSL\n"
 if ! [ -x "$(command -v certbot)" ]; then
-    printf "\n⚠️ ${RED}Certbot is not installed.${RESET}\n"
+    printf "\n⚠️ ${yellow}Certbot is not installed.${reset}\n"
     printf "\n🚜 Installing Certbot...\n"
     sudo apt install -y certbot python3-certbot-nginx
 fi
 sudo certbot --nginx -d $domain
 
-# restart nginx
+# restart nginx and the sqlpage service
 printf "\n🚜 Restarting nginx...\n"
 sudo systemctl restart nginx
-
-# restart the sqlpage service for good measure
-printf "\n🚜 Restarting the SQLPage service...\n"
 sudo systemctl restart sqlpage-$repo_name
+
+
+
+
+# - - - - - - -
+# - - Fine 🤌
+# - - - - - - -
 
 printf "\n\n🚀 ${GREEN}SQLPage is now running at https://$domain!${RESET}\n\n"
 printf "\n\nIf everything went well, we should be able to visit https://$domain\n
-and see the SQLPage website!\n\nYou may want to check the status of the SQLPage\n
+and see the SQLPage website! You may want to check the status of the SQLPage\n
 service by running 'sudo systemctl status sqlpage-$repo_name' and the nginx service\n
-by running 'sudo systemctl status nginx'.\n\nAnd make sure you've set up the SQLPage\n
+by running 'sudo systemctl status nginx'. And make sure you've set up the SQLPage\n
 configuration file at /var/www/$repo_name/sqlpage/sqlpage.json.\n\n"

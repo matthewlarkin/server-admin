@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source colors.sh
+
 # User Creation and SSH Configuration on Ubuntu 22.04 VPS
 # This is the first part of the VPS hardening process (before security-setup.sh)
 # This step is intended to be run as root once you have logged in to the VPS
@@ -29,4 +31,4 @@ sed -i 's/PermitRootLogin yes/PermitRootLogin no/g' /etc/ssh/sshd_config
 sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/g' /etc/ssh/sshd_config
 sudo systemctl restart sshd
 
-echo "SSH configuration updated. Please log in as the new user to continue with the setup."
+printf "\n\n${green}SSH configuration updated.${reset} Please log in as the new user to continue with the setup."
