@@ -41,19 +41,19 @@ bash web/www.sh
 
 # list available SSH keys
 printf "\n- - - 🌿 SSH Keys 🌿 - - -\n"
-available_ssh_keys=$(bash security/ssh.sh -l)
+available_ssh_keys=$(bash security/ssh -l)
 
 # if there are no SSH keys, create a new one
 if [ -z "$available_ssh_keys" ]; then
     printf "\n⚠️ ${red}No SSH keys found.${reset}\n"
     printf "\n🚜 Creating a new SSH key...\n"
-    bash security/ssh.sh -n
+    bash security/ssh -n
     printf "\n✅ ${green}SSH key created!${reset}\n"
 else
     printf "\n🚜 Use an existing SSH key? (y/n): " && read use_existing_ssh_key
     if [ "$use_existing_ssh_key" = "n" ]; then
         printf "\n🚜 Creating a new SSH key...\n"
-        bash security/ssh.sh -n
+        bash security/ssh -n
         printf "\n✅ ${green}SSH key created!${reset}\n"
     else
         # allow user to choose an existing SSH key
