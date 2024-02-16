@@ -45,7 +45,7 @@ available_ssh_keys=$(bash security/ssh -l)
 
 # if there are no SSH keys, create a new one
 if [ -z "$available_ssh_keys" ]; then
-    printf "\n⚠️ ${red}No SSH keys found.${reset}\n"
+    printf "\n⚠️ ${yellow}No SSH keys found.${reset}\n"
     printf "\n🚜 Creating a new SSH key...\n"
     bash security/ssh -n
     printf "\n✅ ${green}SSH key created!${reset}\n"
@@ -56,27 +56,18 @@ else
         bash security/ssh -n
         printf "\n✅ ${green}SSH key created!${reset}\n"
     else
-        # allow user to choose an existing SSH key
-        printf "\nAvailable SSH keys:\n"
-        echo "$available_ssh_keys"
-        printf "\nSSH key to use: " && read ssh_key
+        # print the existing public key
+        printf "\nYour existing public key is:\n"
+        bash security/ssh -e
     fi
 fi
-
-# Verify that the chosen SSH key exists
-while [ ! -f ~/.ssh/$ssh_key ]; do
-    printf "\n⚠️ ${red}SSH key not found.${reset}\n"
-    printf "\nAvailable SSH keys:\n"
-    echo "$available_ssh_keys"
-    printf "\nSSH key to use: " && read ssh_key
-done
 
 # Check that user has set up SSH key on GitHub
 printf "\n- - - 🌿 GitHub SSH Key 🌿 - - -\n"
 printf "\nHave you set up the SSH key on GitHub? (y/n): " && read ssh_key_setup
 
 while [ "$ssh_key_setup" != "y" ]; do
-    printf "\n⚠️ ${red}Please set up the SSH key on GitHub.${reset} Then, press 'y' to continue: " && read ssh_key_setup
+    printf "\n⚠️ ${yellow}Please set up the SSH key on GitHub.${reset} Then, press 'y' to continue: " && read ssh_key_setup
 done
 
 

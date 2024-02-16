@@ -14,10 +14,11 @@ fi
 while getopts "lne" opt; do
     case $opt in
         l)
-            for key in ~/.ssh/*.pub; do basename "$key"; done
+            for key in $(ls ~/.ssh/*.pub); do sudo basename "$key"; done 2>/dev/null
             ;;
         n)
             ssh-keygen -t ecdsa -b 521 -f ~/.ssh/id_ecdsa -q
+            sleep 1
             cat ~/.ssh/id_ecdsa.pub
             ;;
         e)
