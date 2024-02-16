@@ -1,23 +1,22 @@
-# check if nginx is installed
-if ! [ -x "$(command -v nginx)" ]; then
-  echo "⚠️ nginx is not installed. Installing nginx..."
-  sudo apt install -y nginx
-else
-  echo "✅ nginx is installed"
-fi
+#!/bin/bash
 
-# check if nginx is running
-if ! systemctl is-active --quiet nginx; then
-  echo "⚠️ nginx is not running. Starting nginx..."
-  sudo systemctl start nginx
-else
-  echo "✅ nginx is running"
-fi
+source server-admin/includes/colors.sh
+source server-admin/includes/animation.sh
 
-# check if nginx is enabled
-if ! systemctl is-enabled --quiet nginx; then
-  echo "⚠️ nginx is not enabled. Enabling nginx..."
-  sudo systemctl enable nginx
-else
-  echo "✅ nginx is enabled"
-fi
+# Check if nginx is installed
+nginx_installation_commands="
+    [ -x \"$(command -v nginx)\" ] || sudo apt install -y nginx
+"
+run_with_animation "$nginx_installation_commands" "nginx is installed."
+
+# Check if nginx is running
+nginx_running_commands="
+    systemctl is-active --quiet nginx || sudo systemctl start nginx
+"
+run_with_animation "$nginx_running_commands" "nginx is running."
+
+# Check if nginx is enabled
+nginx_enabled_commands="
+    systemctl is-enabled --quiet nginx || sudo systemctl enable nginx
+"
+run_with_animation "$nginx_enabled_commands" "nginx is enabled."

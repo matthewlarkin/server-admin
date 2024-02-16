@@ -1,30 +1,26 @@
 #!/bin/bash
 
-# Constants
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[0;33m'
-MUTED='\033[1;30m'
-RESET='\033[0m'
-SQLPAGE_BIN="/usr/bin/sqlpage"
-SQLPAGE_URL="https://github.com/lovasoa/SQLpage/releases/download/v0.18.3/sqlpage-linux.tgz"
+source server-admin/includes/colors.sh
+source server-admin/includes/animation.sh
+
+sqlpage_bin="/usr/bin/sqlpage"
+sqlpage_url="https://github.com/lovasoa/SQLpage/releases/download/v0.18.3/sqlpage-linux.tgz"
 
 # Functions
 function install_sqlpage {
-    if [ ! -f "$SQLPAGE_BIN" ]; then
-        printf "\n⚠️  ${RED}SQLPage is not installed...${RESET}\n"
+    if [ ! -f "$sqlpage_bin" ]; then
+        printf "\n⚠️  ${red}SQLPage is not installed...${reset}\n"
         printf "\n🚜 Installing SQLPage...\n"
-        sudo curl -s -L -O $SQLPAGE_URL
+        sudo curl -s -L -O $sqlpage_url
         sudo tar -xzf sqlpage-linux.tgz && sudo rm sqlpage-linux.tgz
-        sudo mv sqlpage.bin $SQLPAGE_BIN
-        sudo chmod 750 $SQLPAGE_BIN
-        sudo chown www-data:www-data $SQLPAGE_BIN
+        sudo mv sqlpage.bin $sqlpage_bin
+        sudo chmod 750 $sqlpage_bin
+        sudo chown www-data:www-data $sqlpage_bin
     fi
 }
 
 function ask_question {
-    printf "${YELLOW}QUESTION${RESET}: $1 "
+    printf "${yellow}QUESTION${reset}: $1 "
     read response
     echo $response
 }
@@ -32,7 +28,7 @@ function ask_question {
 function validate_port {
     port=$1
     while [ -n "$(sudo lsof -i :$port)" ]; do
-        printf "\n⚠️ ${RED}Something is already running on port ${port}.${RESET}\n"
+        printf "\n⚠️ ${red}Something is already running on port ${port}.${reset}\n"
         port=$(ask_question "What port would you like to run the SQLPage service on?")
     done
     echo $port
@@ -42,12 +38,12 @@ function validate_port {
 printf "\n- - - - - - - - - - - - - - -\n"
 
 # run the nginx script (to make sure nginx is installed and running)
-printf "\n🚜 ${BLUE}Setting up SQLPage...${RESET}\n"
+printf "\n🚜 ${blue}Setting up SQLPage...${reset}\n"
 bash server-admin/site-setup/nginx.sh
 
 install_sqlpage
 
-printf "\n✅ ${GREEN}SQLPage is installed!${RESET}\n"
+printf "\n✅ ${green}SQLPage is installed!${reset}\n"
 
 printf "\n- - - - - - - - - - - - - - -\n\n"
 
@@ -79,7 +75,7 @@ Description=SQLPage Service
 After=network.target
 
 [Service]
-ExecStart=$SQLPAGE_BIN -p $port /var/www/$repo
+ExecStart=$sqlpage_bin -p $port /var/www/$repo
 User=www-data
 Group=www-data
 Restart=always
@@ -118,5 +114,5 @@ clone_repo $repo
 setup_sqlpage_service $port $repo
 setup_nginx $domain $www_included $repo $port
 
-printf "\n✅ ${GREEN}SQLPage service is running and Nginx is configured!${RESET}\n"
+printf "\n✅ ${green}SQLPage service is running and Nginx is configured!${reset}\n"
 printf "\n- - - - - - - - - - - - - - -\n\n"
