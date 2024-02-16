@@ -1,89 +1,38 @@
 #!/bin/bash
 
-# colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[0;33m'
-MUTED='\033[1;30m'
-RESET='\033[0m'
+source colors.sh
 
-printf "\n- - - - - - - - - - - - - - -\n"
+printf "\n - - - - - - - - - - - - - - - - - - -\n"
+printf "\n- - - - - 🌳 SQLPage Setup 🌳 - - - - -\n"
+printf "\n - - - - - - - - - - - - - - - - - - -\n"
 
-# run the nginx script (to make sure nginx is installed and running)
-printf "\n🚜 ${BLUE}Setting up SQLPage...${RESET}\n"
-bash server-admin/site-setup/nginx.sh
-
-
-# if /usr/bin/sqlpage does not exist yet
-if [ ! -f "/usr/bin/sqlpage" ]; then
-    printf "\n⚠️  ${RED}SQLPage is not installed...${RESET}\n"
-    printf "\n🚜 Installing SQLPage...\n"
-    sudo curl -s -L -O https://github.com/lovasoa/SQLpage/releases/download/v0.18.3/sqlpage-linux.tgz
-    sudo tar -xzf sqlpage-linux.tgz && sudo rm sqlpage-linux.tgz
-    sudo mv sqlpage.bin /usr/bin/sqlpage
-    sudo chmod 750 /usr/bin/sqlpage
-    sudo chown www-data:www-data /usr/bin/sqlpage
-fi
-
-printf "\n✅ ${GREEN}SQLPage is installed!${RESET}\n"
-
-printf "\n- - - - - - - - - - - - - - -\n\n"
-
+bash web/nginx/install.sh
+bash web/sqlpage/install.sh
 
 # install the sqlpage website in the home directory
-printf "${YELLOW}QUESTION${RESET}: What is your github repo? ${MUTED}<user/repo>: ${RESET}"
-read repo
-printf "${YELLOW}QUESTION${RESET}: What is the domain name? "
-read domain
-printf "${YELLOW}QUESTION${RESET}: Will you be using a 'www' for this domain? (y/n) "
-read www_included
-printf "${YELLOW}QUESTION${RESET}: What port would you like to run the SQLPage service running on? "
-read port
-
-
-printf "\n- - - - - - - - - - - - - - -\n"
+printf "\n- - - 🌿 Project Details 🌿 - - -\n"
+printf "GitHub repo <user/repo>: " && read repo
+printf "Domain name: " && read domain
+printf "Include www (y/n): " && read www_included
+printf "SQLPage port: " && read port
 
 # check if something is currently running on the port
 while [ -n "$(sudo lsof -i :$port)" ]; do
-    printf "\n⚠️ ${RED}Something is already running on port ${port}.${RESET}\n"
-    read -p "${YELLOW}QUESTION${RESET}: What port would you like to run the SQLPage service on? " port
+    printf "${yellow}Port ${port} is already in use!${RESET}"
+    printf "SQLPage port: " && read port
 done
-printf "\n✅ ${GREEN}Port ${port} is available!\n${RESET}"
 
 printf "\n- - - - - - - - - - - - - - -\n"
 
-public_ip=$(curl -s ifconfig.me)
-printf "\n${YELLOW}QUESTION${RESET}: Have you already setup the DNS for this domain? You'll need to point A records to ${BLUE}${public_ip}${RESET} (y/n) "
-read dns_setup
+bash web/verify-domain.sh "$domain"
+bash web/var-www.sh
 
-printf "\n- - - - - - - - - - - - - - -\n"
+# list available SSH keys
+printf "\n🔑 ${YELLOW}Available SSH keys:${RESET}\n"
+ls -al ~/.ssh
+printf "\nDo you have an SSH key setup for this server and GitHub? (y/n) "
 
-
-while [ $dns_setup != "y" ]; do
-    printf "\n🙄 Okay, go set up the DNS for $domain, and when you're done, come back here and say 'y' to continue. (y) "
-    read dns_setup
-done
-
-# split the repo into $user and $repo_name vars
-IFS='/' read -r -a repo_array <<< "$repo"
-user=${repo_array[0]}
-repo_name=${repo_array[1]}
-
-# check that /var/www/ exists
-printf "\n👏 Great, let's check in on /var/www/...\n"
-if [ ! -d "/var/www" ]; then
-    echo "🚜 /var/www/ does not exist. Creating /var/www/..."
-    sudo mkdir -p /var/www
-fi
-
-printf "\n✅ ${GREEN}/var/www/ created!${RESET}\n\n"
-
-read -p "Have you set up an SSH key on this server and set it up on GitHub? (y/n)" ssh_setup
-while [ $ssh_setup != "y" ]; do
-    printf "\n🙄 Okay, go setup the SSH key, and when you're done, come back here and say 'y' to continue. (y) "
-    read ssh_setup
-done
+[[ $REPLY == [yY] ]] && printf "\n🔑 ${GREEN}Great!${RESET}\n" || bash setup-ssh-key.sh
 
 printf "\n👏 ${GREEN}Awesome!${RESET}\n"
 

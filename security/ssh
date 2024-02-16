@@ -1,0 +1,30 @@
+#!/bin/bash
+
+source colors.sh
+
+# if no argument are passed, print usage
+if [ $# -eq 0 ]; then
+    printf "\nUsage: ssh.sh [options]\n\n"
+    printf "  ${green}-l${reset}\t${muted}List all public keys\n"
+    printf "  ${green}-n${reset}\t${muted}Create a new key pair\n"
+    printf "  ${green}-e${reset}\t${muted}Print the existing public key${reset}\n\n"
+    exit 1
+fi
+
+while getopts "lne" opt; do
+    case $opt in
+        l)
+            for key in ~/.ssh/*.pub; do basename "$key"; done
+            ;;
+        n)
+            ssh-keygen -t ecdsa -b 521 -f ~/.ssh/id_ecdsa -q
+            cat ~/.ssh/id_ecdsa.pub
+            ;;
+        e)
+            printf "\n✅ Your public key is: \n"
+            cat ~/.ssh/id_ecdsa.pub
+            ;;
+        \?)
+            printf "\nInvalid option: -$OPTARG\n"
+    esac
+done
