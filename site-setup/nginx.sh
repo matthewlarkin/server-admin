@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# set up nginx for unbuntu 22.04
-sudo apt install -y nginx
-
-# set up systemd service to automatically start nginx on server boot
-sudo systemctl enable nginx
-
-# start the nginx service
-sudo systemctl start nginx
+# check if nginx is installed
+if [ -x "$(command -v nginx)" ]; then
+    printf "\n✅ Nginx is already installed\n"
+else
+    sudo apt install -y nginx
+    sudo systemctl enable nginx
+    sudo systemctl start nginx
+fi
